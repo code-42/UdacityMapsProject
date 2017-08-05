@@ -6,19 +6,24 @@
   	<meta content="IE=edge" http-equiv="X-UA-Compatible">
   	<meta content="width=device-width, initial-scale=1" name="viewport">
     <link href="resources/style.css" rel="stylesheet">
-    
+    <!--<script src="resources/script.js"></script>-->
   <title>Udacity Maps Project</title>
   </head>
   <body>
     <div class="container">
       <div class="options-box">
-        <h1>CareerDevs Providence Places</h1>
+        <h1>Find Your New NYC Home</h1>
         <div>
           <input id="show-listings" type="button" value="Show Listings">
           <input id="hide-listings" type="button" value="Hide Listings">
           <hr>
           <span class="text"> Draw a shape to search within it for homes!</span>
           <input id="toggle-drawing"  type="button" value="Drawing Tools">
+        </div>
+        <hr>
+        <div>
+          <input id="zoom-to-area-text" type="text" placeholder="Enter your favorite area!">
+          <input id="zoom-to-area" type="button" value="Zoom">
         </div>
       </div>
       <div id="map"></div>
@@ -27,13 +32,12 @@
     <script src="resources/script.js"></script>
     <!-- script file for API keys.js file contents:
       var urlTag = '<script async defer src="https://maps.googleapis.com/maps/api/js?key=_PUT_YOUR_API_KEY_HERE_&v=3&callback=initMap"></script>'
-    -->
+      -->  
     <script src="resources/keys.js"></script>
+
     
-    <!-- urlTag pulled from keys.js -->
-    <script>
-      document.write(urlTag);       
-    </script>
+ 
+
     
     
   </body>

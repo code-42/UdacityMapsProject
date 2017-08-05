@@ -1,16 +1,18 @@
-// Create a map variable
-var map;
+      var map;
 
-// Create a new blank array for all the listing markers.
-var markers = [];
-      
-// Function to initialize the map within the map div
-function initMap() {
-    var styles = [
+      // Create a new blank array for all the listing markers.
+      var markers = [];
+
+      // This global polygon variable is to ensure only ONE polygon is rendered.
+      var polygon = null;
+
+      function initMap() {
+        // Create a styles array to use with the map.
+        var styles = [
           {
             featureType: 'water',
             stylers: [
-              { color: '#add8e6' }
+              { color: '#19a0d8' }
             ]
           },{
             featureType: 'administrative',
@@ -29,7 +31,7 @@ function initMap() {
             featureType: 'road.highway',
             elementType: 'geometry.stroke',
             stylers: [
-              { color: '#ffff00' },
+              { color: '#efe9e4' },
               { lightness: -40 }
             ]
           },{
@@ -67,24 +69,23 @@ function initMap() {
             featureType: 'road.highway',
             elementType: 'geometry.fill',
             stylers: [
-              { color: '#ffff00' },
+              { color: '#efe9e4' },
               { lightness: -25 }
             ]
           }
         ];
 
         // Constructor creates a new map - only center and zoom are required.
-        // center at Prov City Hall
         map = new google.maps.Map(document.getElementById('map'), {
-         center: {lat: 41.824023, lng: -71.412908},
-         zoom: 14,
-         styles: styles,
-         mapTypeControl: false
+          center: {lat: 41.823989, lng: -71.412834},
+          zoom: 13,
+          styles: styles,
+          mapTypeControl: false
         });
         
         // Create a single latLng literal object.
-        // WaterFire Building
-        // var singleLatLng = {lat: 41.828826, lng: -71.433083};
+        // Providence City Hall
+        // var singleLatLng = {lat: 41.823989, lng:-71.412834};
         
         // These are the real estate listings that will be shown to the user.
         // Normally we'd have these in a database instead.
@@ -99,6 +100,17 @@ function initMap() {
 
         var largeInfowindow = new google.maps.InfoWindow();
 
+        // Initialize the drawing manager.
+        var drawingManager = new google.maps.drawing.DrawingManager({
+          drawingMode: google.maps.drawing.OverlayType.POLYGON,
+          drawingControl: true,
+          drawingControlOptions: {
+            position: google.maps.ControlPosition.TOP_LEFT,
+            drawingModes: [
+              google.maps.drawing.OverlayType.POLYGON
+            ]
+          }
+        });
 
         // Style the markers a bit. This will be our listing marker icon.
         var defaultIcon = makeMarkerIcon('0091ff');
@@ -139,6 +151,35 @@ function initMap() {
         document.getElementById('show-listings').addEventListener('click', showListings);
         document.getElementById('hide-listings').addEventListener('click', hideListings);
 
+        document.getElementById('toggle-drawing').addEventListener('click', function() {
+          toggleDrawing(drawingManager);
+        });
+
+        document.getElementById('zoom-to-area').addEventListener('click', function() {
+          zoomToArea();
+        });
+
+        // Add an event listener so that the polygon is captured,  call the
+        // searchWithinPolygon function. This will show the markers in the polygon,
+        // and hide any outside of it.
+        drawingManager.addListener('overlaycomplete', function(event) {
+          // First, check if there is an existing polygon.
+          // If there is, get rid of it and remove the markers
+          if (polygon) {
+            polygon.setMap(null);
+            hideListings(markers);
+          }
+          // Switching the drawing mode to the HAND (i.e., no longer drawing).
+          drawingManager.setDrawingMode(null);
+          // Creating a new editable polygon from the overlay.
+          polygon = event.overlay;
+          polygon.setEditable(true);
+          // Searching within the polygon.
+          searchWithinPolygon();
+          // Make sure the search is re-done if the poly is changed.
+          polygon.getPath().addListener('set_at', searchWithinPolygon);
+          polygon.getPath().addListener('insert_at', searchWithinPolygon);
+        });
       }
 
       // This function populates the infowindow when the marker is clicked. We'll only allow
@@ -217,4 +258,59 @@ function initMap() {
           new google.maps.Point(10, 34),
           new google.maps.Size(21,34));
         return markerImage;
+      }
+
+      // This shows and hides (respectively) the drawing options.
+      function toggleDrawing(drawingManager) {
+        if (drawingManager.map) {
+          drawingManager.setMap(null);
+          // In case the user drew anything, get rid of the polygon
+          if (polygon !== null) {
+            polygon.setMap(null);
+          }
+        } else {
+          drawingManager.setMap(map);
+        }
+      }
+
+      // This function hides all markers outside the polygon,
+      // and shows only the ones within it. This is so that the
+      // user can specify an exact area of search.
+      function searchWithinPolygon() {
+        for (var i = 0; i < markers.length; i++) {
+          if (google.maps.geometry.poly.containsLocation(markers[i].position, polygon)) {
+            markers[i].setMap(map);
+          } else {
+            markers[i].setMap(null);
+          }
+        }
+      }
+
+      // This function takes the input value in the find nearby area text input
+      // locates it, and then zooms into that area. This is so that the user can
+      // show all listings, then decide to focus on one area of the map.
+      function zoomToArea() {
+        // Initialize the geocoder.
+        var geocoder = new google.maps.Geocoder();
+        // Get the address or place that the user entered.
+        var address = document.getElementById('zoom-to-area-text').value;
+        // Make sure the address isn't blank.
+        if (address == '') {
+          window.alert('You must enter an area, or address.');
+        } else {
+          // Geocode the address/area entered to get the center. Then, center the map
+          // on it and zoom in
+          geocoder.geocode(
+            { address: address,
+              componentRestrictions: {locality: 'New York'}
+            }, function(results, status) {
+              if (status == google.maps.GeocoderStatus.OK) {
+                map.setCenter(results[0].geometry.location);
+                map.setZoom(15);
+              } else {
+                window.alert('We could not find that location - try entering a more' +
+                    ' specific place.');
+              }
+            });
+        }
       }
